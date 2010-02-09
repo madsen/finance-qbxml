@@ -31,6 +31,49 @@ use XML::Writer;
 
 our $VERSION = '0.01';
 
+our %childElements = (
+  QBXML => [qw(
+    SignonMsgsRq
+    QBXMLMsgsRq
+  )],
+  SignonMsgsRq => [qw(
+    SignonAppCertRq
+    SignonDesktopRq
+    SignonTicketRq
+  )],
+ SignonAppCertRq => [qw(
+    ClientDateTime
+    ApplicationLogin
+    ConnectionTicket
+    InstallationID
+    Language
+    AppID
+    AppVer
+  )],
+  SignonDesktopRq => [qw(
+    ClientDateTime
+    ApplicationLogin
+    ConnectionTicket
+    InstallationID
+    Language
+    AppID
+    AppVer
+  )],
+  SignonTicketRq => [qw(
+    ClientDateTime
+    SessionTicket
+    AuthID
+    InstallationID
+    Language
+    AppID
+    AppVer
+  )],
+);
+
+our %multipleChildren = map { $_ => 1 } qw(
+  QBXMLMsgsRq
+);
+
 #=====================================================================
 # Package Finance::QBXML:
 
@@ -44,7 +87,7 @@ sub new
 #---------------------------------------------------------------------
 sub formatXML
 {
-  my ($self, $nodeList) = @_;
+  my ($self, $node) = @_;
 
   my $buffer;
   open(my $out, '>', \$buffer);
@@ -56,17 +99,7 @@ sub formatXML
 
   $w->xmlDecl;
   $w->pi(qbxml => 'version="6.0"');
-  $w->startTag('QBXML');
-
-  if (ref $nodeList->[0]) {
-    foreach my $node (@$nodeList) {
-      $self->formatNode($w, $node);
-    } # end foreach $node
-  } else {
-    $self->formatNode($w, $nodeList);
-  }
-
-  $w->endTag('QBXML');
+  $self->formatNode($w, QBXML => $node);
   $w->end;
   close $out;
 
@@ -76,45 +109,57 @@ sub formatXML
 #---------------------------------------------------------------------
 sub formatNode
 {
-  my ($self, $w, $node) = @_;
+  my ($self, $w, $tag, $node) = @_;
 
-  my (@attrs, $children);
+  my $reftype = (reftype($node) || '');
 
-  if ((reftype($node->[1]) || '') eq 'HASH') {
-    $children = @$node > 2;
+  if ($reftype eq 'ARRAY') {
+    if ($multipleChildren{$tag}) {
+      # One element with multiple children in specified order (using _tag):
+      $w->startTag($tag);
 
-    while (my ($k, $v) = each %{ $node->[1] }) {
+      foreach my $n (@$node) {
+        my $childTag = $n->{_tag} or croak "No _tag in child of $tag";
+        $self->formatNode($w, $childTag => $n);
+      }
+      $w->endTag($tag);
+    } else {
+      # Multiple occurences of this tag:
+      foreach my $n (@$node) {
+        $self->formatNode($w, $tag => $n);
+      }
+    } # end else not $multipleChildren{$tag}
+  } # end if $node is ARRAY
+  elsif ($reftype) {
+    # An ordinary node formed from a hash reference:
+    my (@attrs, $children);
+
+    while (my ($k, $v) = each %$node) {
       if ($k =~ /^[[:lower:]]/) {
         push @attrs, $k, $v;
       } else {
         $children = 1;          # This is a node, not an attribute
+        # FIXME check if valid element name?
       }
     } # end while my ($k, $v)
-  } # end if hash with possible attributes
+
+    if (not $children) {
+      $w->emptyTag($tag, @attrs);
+    } else {
+      $w->startTag($tag, @attrs);
+
+      # qbXML requires elements to appear in the correct order:
+      foreach my $childTag (@{ $childElements{$tag} }) {
+        $self->formatNode($w, $childTag => $node->{$childTag})
+            if exists $node->{$childTag};
+      } # end foreach $childTag
+
+      $w->endTag($tag);
+    } # end else node is not empty
+  } # end elsif $node is a (hash) reference
   else {
-    $children = @$node > 1;
+    $w->dataElement($tag, $node);
   }
-
-  if (not $children) {
-    $w->emptyTag($node->[0], @attrs);
-  } else {
-    $w->startTag($node->[0], @attrs);
-
-    for my $i (1 .. $#$node) {
-      if (not ref($node->[$i])) {
-        $w->characters($node->[$i]);
-      } elsif (reftype($node->[$i]) eq 'ARRAY') {
-        $self->formatNode($w, $node->[$i]);
-      } else {
-        while (my ($k, $v) = each %{ $node->[$i] }) {
-          next if $k =~ /^[[:lower:]]/;
-          $w->dataElement($k, $v);
-        } # end while my ($k, $v)
-      }
-    }
-
-    $w->endTag($node->[0]);
-  } # end else node is not empty
 } # end formatNode
 
 #---------------------------------------------------------------------
