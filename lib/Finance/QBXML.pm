@@ -71,7 +71,7 @@ our %childElements = (
 );
 
 our %multipleChildren = map { $_ => 1 } qw(
-  QBXMLMsgsRq
+  QBXMLMsgsRq  QBXMLMsgsRs
 );
 
 #=====================================================================
