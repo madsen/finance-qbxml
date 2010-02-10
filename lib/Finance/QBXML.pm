@@ -4702,14 +4702,12 @@ sub new
 } # end new
 
 #---------------------------------------------------------------------
-sub formatXML
+sub format_XML
 {
   my ($self, $node) = @_;
 
   my $buffer;
   open(my $out, '>', \$buffer);
-
-#  print $out qq'<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="6.0"?>\n';
 
   my $w = XML::Writer->new(OUTPUT => $out, DATA_MODE => 1, DATA_INDENT => 2,
                            ENCODING => 'utf-8');
@@ -4721,7 +4719,7 @@ sub formatXML
   close $out;
 
   $buffer;
-} # end formatXML
+} # end format_XML
 
 #---------------------------------------------------------------------
 sub formatNode
@@ -4778,6 +4776,21 @@ sub formatNode
     $w->dataElement($tag, $node);
   }
 } # end formatNode
+
+#---------------------------------------------------------------------
+sub get_parser
+{
+  my ($self) = @_;
+
+  require Finance::QBXML::Handler;
+  require XML::SAX::ParserFactory;
+
+  my $parser = XML::SAX::ParserFactory->parser(
+    Handler => Finance::QBXML::Handler->new
+  ) or croak "Unable to create parser";
+
+  return $parser;
+} # end get_parser
 
 #---------------------------------------------------------------------
 sub time2iso
