@@ -132,6 +132,16 @@ sub end_element
   pop @{ $self->{elts} };
 } # end end_element
 
+#---------------------------------------------------------------------
+sub end_document
+{
+  my ($self) = @_;
+
+  delete $self->{elts};
+  # This value will be returned by the parser:
+  return delete $self->{doc};
+} # end end_document
+
 #=====================================================================
 # Package Return Value:
 
