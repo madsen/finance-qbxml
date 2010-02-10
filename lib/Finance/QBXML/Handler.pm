@@ -14,7 +14,7 @@ package Finance::QBXML::Handler;
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either the
 # GNU General Public License or the Artistic License for more details.
 #
-# SAX handler for parsing qbXML files
+# ABSTRACT: SAX handler for parsing qbXML files
 #---------------------------------------------------------------------
 
 use 5.008;

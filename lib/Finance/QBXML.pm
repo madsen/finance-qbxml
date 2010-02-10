@@ -14,7 +14,7 @@ package Finance::QBXML;
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either the
 # GNU General Public License or the Artistic License for more details.
 #
-# [Description]
+# ABSTRACT: Read and write QuickBooks qbXML
 #---------------------------------------------------------------------
 
 use 5.008;

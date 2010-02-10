@@ -6,8 +6,10 @@ Makefile.PL
 README
 dist.ini
 lib/Finance/QBXML.pm
+lib/Finance/QBXML/Handler.pm
 t/00.load.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
 tools/FQTemplate.pm
 tools/loom.pl
+tools/parseSchema.pl
