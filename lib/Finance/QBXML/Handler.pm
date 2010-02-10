@@ -5,7 +5,6 @@ package Finance::QBXML::Handler;
 #
 # Author: Christopher J. Madsen <perl@cjmweb.net>
 # Created: February 2, 2010
-# $Id: Module.pm 2035 2008-06-25 23:41:21Z cjm $
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the same terms as Perl itself.
