@@ -4696,9 +4696,12 @@ our %multipleChildren = map { $_ => 1 } qw(
 
 sub new
 {
-  my $class = shift;
+  my ($class, %opt) = @_;
 
-  bless {}, $class;
+  bless {
+    indent  => defined($opt{indent}) ? $opt{indent} : 0,
+    version => $opt{version} || '8.0',
+  }, $class;
 } # end new
 
 #---------------------------------------------------------------------
@@ -4709,11 +4712,12 @@ sub format_XML
   my $buffer;
   open(my $out, '>', \$buffer);
 
-  my $w = XML::Writer->new(OUTPUT => $out, DATA_MODE => 1, DATA_INDENT => 2,
+  my $w = XML::Writer->new(OUTPUT => $out, DATA_MODE => 1,
+                           DATA_INDENT => $self->{indent},
                            ENCODING => 'utf-8');
 
   $w->xmlDecl;
-  $w->pi(qbxml => 'version="6.0"');
+  $w->pi(qbxml => qq'version="$self->{version}"');
   $self->formatNode($w, QBXML => $node);
   $w->end;
   close $out;
