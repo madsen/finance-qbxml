@@ -91,7 +91,12 @@ sub start_element
     croak "Can't nest multipleChildren for $v->{LocalName}" if $newNode;
     $newNode = { _tag => $v->{LocalName} };
     push @$e, $newNode;
+  } elsif ($Finance::QBXML::mayRepeat{$v->{LocalName}}) {
+    push @{ $e->{ $v->{LocalName} } }, $newNode;
+    $newNode ||= \$e->{ $v->{LocalName} }[-1];
   } else {
+    croak "Unexpected repeat of <$v->{LocalName}>"
+        if exists $e->{ $v->{LocalName} };
     $e->{ $v->{LocalName} } = $newNode;
     $newNode ||= \$e->{ $v->{LocalName} };
   }
