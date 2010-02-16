@@ -1,5 +1,5 @@
 #---------------------------------------------------------------------
-package tools::FQTemplate;
+package disttools::FQTemplate;
 #
 # Copyright 2009 Christopher J. Madsen
 #
