@@ -23,6 +23,7 @@ use strict;
 use Carp;
 use Finance::QBXML ();
 use Scalar::Util 'reftype';
+#use Smart::Comments '###';
 
 #=====================================================================
 # Package Global Variables:
@@ -69,12 +70,17 @@ sub start_element
   return if $v->{LocalName} eq 'QBXML'; # Ignore root
 
   my $elts = $self->{elts};
+  my $attrs = $v->{Attributes};
 
-  ###print "start $v->{LocalName}\n";
+  ### start: $v->{LocalName}
 
   my $newNode;
 
-  $newNode = [] if $Finance::QBXML::multipleChildren{$v->{LocalName}};
+  $newNode = { map { @$_{qw(LocalName Value)} } values %$attrs }
+      if %$attrs;
+
+  $newNode->{_} = []
+      if $Finance::QBXML::multipleChildren{$v->{LocalName}};
 
   croak "No elts" unless @$elts;
 
@@ -87,8 +93,8 @@ sub start_element
   }
 
   if ($reftype eq 'ARRAY') {
-    croak "Can't nest multipleChildren for $v->{LocalName}" if $newNode;
-    $newNode = { _tag => $v->{LocalName} };
+    $newNode ||= {};
+    $newNode->{_tag} = $v->{LocalName};
     push @$e, $newNode;
   } elsif ($Finance::QBXML::mayRepeat{$v->{LocalName}}) {
     push @{ $e->{ $v->{LocalName} } }, $newNode;
@@ -99,6 +105,8 @@ sub start_element
     $e->{ $v->{LocalName} } = $newNode;
     $newNode ||= \$e->{ $v->{LocalName} };
   }
+
+  $newNode = $newNode->{_} if reftype($newNode) eq 'HASH' and $newNode->{_};
 
   push @$elts, $newNode;
 } # end start_element
@@ -116,7 +124,7 @@ sub characters
     croak "Mixed data";
   }
 
-  ###print "characters <$v->{Data}>\n";
+  ### characters: $v->{Data}
 } # end characters
 
 #---------------------------------------------------------------------
@@ -126,7 +134,7 @@ sub end_element
 
   return if $v->{LocalName} eq 'QBXML'; # Ignore root
 
-  ###print "end $v->{LocalName}\n";
+  ### end: $v->{LocalName}
 
   pop @{ $self->{elts} };
 } # end end_element

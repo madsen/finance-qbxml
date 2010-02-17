@@ -13,7 +13,9 @@ use 5.008;
 
 my @inTag;
 my @children;
-my %childElements = ( QBXML => [qw( SignonMsgsRq QBXMLMsgsRq )]);
+my %childElements = ( QBXML => [qw(
+  SignonMsgsRq QBXMLMsgsRq QBXMLSubscriptionMsgsRq
+)]);
 my %mayRepeat;
 
 sub printChildren
@@ -69,10 +71,11 @@ while (<>) {
 
 } # end while <>
 
-print "\n\nour %childElements = (\n";
+print "# qbXML requires that elements be listed in a particular order:\n";
+print "our %childElements = (\n";
 printChildren($_ => $childElements{$_}) for sort keys %childElements;
-print ");\n";
+print "); # end %childElements\n";
 
 print "\nour %mayRepeat = map { \$_ => 1 } qw(\n";
 print "  $_\n" for sort keys %mayRepeat;
-print ");\n";
+print "); # end %mayRepeat\n";
