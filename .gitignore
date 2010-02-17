@@ -1,0 +1,6 @@
+/.build/
+/blib/
+Makefile
+/pm_to_blib
+Finance-QBXML-*.tar.gz
+Finance-QBXML-*/
