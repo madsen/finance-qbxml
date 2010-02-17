@@ -4701,6 +4701,12 @@ has indent => (
   default => 0,
 );
 
+has on_error => (
+  is       => 'rw',
+  isa      => Str,
+  default  => 'stopOnError',
+);
+
 has version => (
   is      => 'ro',
   isa     => Str,
@@ -4742,15 +4748,18 @@ sub formatNode
 
   if ($multipleChildren{$tag}) {
     # One element with multiple children in specified order (using _tag):
-    my @attrs;
+    my %attr;
 
     if ($reftype eq 'HASH') {
-      @attrs = map { $_ => $node->{$_} } grep { /^[[:lower:]]/ } keys %$node;
+      %attr = map { $_ => $node->{$_} } grep { /^[[:lower:]]/ } keys %$node;
       # The arrayref of child nodes is stored in the '_' key:
       $node = $node->{_} || [];
     } # end if HASH
 
-    $w->startTag($tag, @attrs);
+    # Add default value for onError to QBXMLMsgsRq:
+    $attr{onError} ||= $self->on_error if $tag eq 'QBXMLMsgsRq';
+
+    $w->startTag($tag, %attr);
 
     foreach my $n (@$node) {
       my $childTag = $n->{_tag} or croak "No _tag in child of $tag";
