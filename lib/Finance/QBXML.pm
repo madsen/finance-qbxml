@@ -4801,6 +4801,13 @@ sub formatNode
 
     $w->startTag($tag, %attr);
 
+=diag C<< No _tag in child of %s >>
+
+Each child element of the specified tag must have a C<_tag> entry with
+its tag name.
+
+=cut
+
     foreach my $n (@$node) {
       my $childTag = $n->{_tag} or croak "No _tag in child of $tag";
       $self->formatNode($w, $childTag => $n);
@@ -4869,6 +4876,12 @@ sub get_parser
   my $parser = XML::SAX::ParserFactory->parser(
     Handler => Finance::QBXML::Handler->new
   ) or croak "Unable to create parser";
+
+=diag C<< Unable to create parser >>
+
+L<XML::SAX::ParserFactory> failed to return a parser object.
+
+=cut
 
   return $parser;
 } # end get_parser
