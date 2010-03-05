@@ -155,3 +155,21 @@ sub end_document
 1;
 
 __END__
+
+=head1 SYNOPSIS
+
+    use Finance::QBXML;
+
+    my $qb = Finance::QBXML->new;
+
+    $hashRef = $qb->get_parser->parse_string($xml_string);
+
+
+=head1 DESCRIPTION
+
+Finance::QBXML::Handler is a SAX2.1 ContentHandler for qbXML
+documents.  You don't use it directly; see L<Finance::QBXML> for
+documentation.
+
+=for Pod::Coverage
+.

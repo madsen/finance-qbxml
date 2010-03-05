@@ -4695,6 +4695,34 @@ our %multipleChildren = map { $_ => 1 } qw(
 #=====================================================================
 # Package Finance::QBXML:
 
+=for Pod::Loom-sort_method
+new
+
+=method new
+
+  $qb = Finance::QBXML->new(...)
+
+This is the standard L<Moose|Moose::Object> constructor.
+
+=attr indent
+
+This is the value to use for XML::Writer's C<DATA_INDENT> parameter
+(default 0).  QuickBooks doesn't care, but it's easier for a human to
+read indented XML.
+
+=attr on_error
+
+This is the default value for the C<onError> attribute of the
+C<< <QBXMLMsgsRq> >> tag (if it didn't already have that attribute).
+(default C<stopOnError>)
+
+=attr version
+
+This is the version of qbXML to use (default C<8.0>).  (You should
+give this as a string, so the trailing 0 won't get stripped.)
+
+=cut
+
 has indent => (
   is      => 'ro',
   isa     => Int,
@@ -4712,8 +4740,20 @@ has version => (
   isa     => Str,
   default => '8.0',
 );
-
 #---------------------------------------------------------------------
+
+=method format_XML
+
+  $qb->format_XML(\%data, $output)
+  $xml_string = $qb->format_XML(\%data)
+
+This method takes a hashref and converts it to qbXML.  If C<$output>
+is specified, it is passed to XML::Writer as the C<OUTPUT> parameter
+and this method returns nothing.  If C<$output> is undef, the XML is
+collected in a string and returned.
+
+=cut
+
 sub format_XML
 {
   my ($self, $node, $out) = @_;
@@ -4804,8 +4844,21 @@ sub formatNode
     $w->dataElement($tag, $node);
   }
 } # end formatNode
-
 #---------------------------------------------------------------------
+
+=for Pod::Coverage
+formatNode
+
+=method get_parser
+
+  $hashRef = $qb->get_parser->parse_string($qbxml_string)
+
+This method returns a SAX2 parser for qbXML.  Calling one of the parse
+methods (see L<XML::SAX::Base>) will return a hashref representing the
+qbXML.
+
+=cut
+
 sub get_parser
 {
   my ($self) = @_;
@@ -4819,8 +4872,18 @@ sub get_parser
 
   return $parser;
 } # end get_parser
-
 #---------------------------------------------------------------------
+
+=method time2iso
+
+  $time_string = $qb->time2iso( [$time] )
+
+This method converts an epoch time to a qbXML-compatible time in
+C<yyyy-mm-ddThh:mm:ss> format.  If C<$time> is omitted, uses the
+current time.
+
+=cut
+
 sub time2iso
 {
   my ($self, $time) = @_;
@@ -4846,54 +4909,108 @@ __END__
 
     use Finance::QBXML;
 
-=for author to fill in:
-    Brief code example(s) here showing commonest usage(s).
-    This section will be as far as many users bother reading
-    so make it as educational and exeplary as possible.
+    my $qb = Finance::QBXML->new;
+
+    $xml_string = $qb->format_XML({ QBXMLMsgsRq => [
+      { _tag => 'CompanyQueryRq' },
+    ]});
+
+    $hashRef = $qb->get_parser->parse_string($xml_string);
 
 
 =head1 DESCRIPTION
 
-=for author to fill in:
-    Write a full description of the module and its features here.
-    Use subsections (=head2, =head3) as appropriate.
+Finance::QBXML converts between QuickBooks qbXML and a Perl data
+structure.  The Perl data structure is similar to that used by
+XML::Simple.  It is primarily a hash of hashes, where the key is the
+attribute or element name, and the value is a string (for attributes
+and simple elements) or a hashref (for complex elements).
 
+Attributes begin with a lowercase letter and elements begin with an
+uppercase letter.  They are stored in the same hash.
 
-=head1 INTERFACE
+Some elements may be repeated.  This is represented by an arrayref of
+values.  Note: When the parser encounters an element that could be
+repeated, it always uses an arrayref for the value, even if it only
+occured once.
 
-=for author to fill in:
-    Write a separate section listing the public components of the modules
-    interface. These normally consist of either subroutines that may be
-    exported, or methods that may be called on objects belonging to the
-    classes provided by the module.
+There is one complication.  The QBXMLMsgsRq element (and corresponding
+QBXMLMsgsRs element) may contain multiple elements of varying types in
+an arbitrary (but significant) order.  This is handled by storing the
+child elements in an arrayref in the C<_> key (a single underscore).
+The tag name of each child element is stored in its C<_tag> key.
+For example:
 
+  $qb->format_XML( { QBXMLMsgsRq => {
+    onError => 'continueOnError',
+    _ => [
+      { _tag => 'CompanyQueryRq' },
+      { _tag => 'AccountQueryRq',
+        FullName => [ 'Account One', 'Account Two' ],
+      },
+      { _tag => 'CustomerQueryRq',
+        FullName => 'Customer Name',
+      },
+      { _tag => 'CreditMemoQueryRq',
+        TxnDateRangeFilter => {
+          FromTxnDate => '2010-01-01T00:00:00',
+          ToTxnDate   => '2010-01-02T00:00:00',
+        },
+      },
+    ],
+  } } );
 
-=head1 DIAGNOSTICS
+Will produce this qbXML:
 
-=for author to fill in:
-    List every single error and warning message that the module can
-    generate (even the ones that will "never happen"), with a full
-    explanation of each problem, one or more likely causes, and any
-    suggested remedies.
+  <?xml version="1.0" encoding="utf-8"?>
+  <?qbxml version="8.0"?>
 
-=over
+  <QBXML>
+    <QBXMLMsgsRq onError="continueOnError">
+      <CompanyQueryRq />
+      <AccountQueryRq>
+        <FullName>Account One</FullName>
+        <FullName>Account Two</FullName>
+      </AccountQueryRq>
+      <CustomerQueryRq>
+        <FullName>Customer Name</FullName>
+      </CustomerQueryRq>
+      <CreditMemoQueryRq>
+        <TxnDateRangeFilter>
+          <FromTxnDate>2010-01-01T00:00:00</FromTxnDate>
+          <ToTxnDate>2010-01-02T00:00:00</ToTxnDate>
+        </TxnDateRangeFilter>
+      </CreditMemoQueryRq>
+    </QBXMLMsgsRq>
+  </QBXML>
 
-=item C<< Error message here, perhaps with %s placeholders >>
+As a shortcut, you can use the arrayref of children directly:
 
-[Description of error here]
+  { QBXMLMsgsRq => [ { _tag => 'CompanyQueryRq' } ] }
 
-=item C<< Another error message here >>
+In this case, the onError attribute will come from the L</"on_error"> attribute.
+The parser always produces the long form.
 
-[Description of error here]
-
-[Et cetera, et cetera]
-
-=back
+Finance::QBXML does not attempt to ensure that the resulting qbXML is
+valid.  It only emits known elements, but it does not detect
+combinations of elements that are prohibited by the spec.
 
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
 Finance::QBXML requires no configuration files or environment variables.
+
+
+=head1 SEE ALSO
+
+You'll need to consult the qbXML reference at
+L<https://member.developer.intuit.com/qbsdk-current/Common/newOSR/index.html>.
+Use the XMLOps tab.
+
+L<Finance::QBXML::QBOE> extends Finance::QBXML with methods to
+interface with QuickBooks Online Edition
+(L<http://quickbooksonline.intuit.com>), including automatic session
+management.
 
 
 =head1 DEPENDENCIES
